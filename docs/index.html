@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja" style="font-size:20px;">
+<head>
+	<meta charset="utf-8">
+	<title>Potion</title>
+	<meta name="description" content="">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<link rel="icon" href="./favicon.ico" type="image/vnd.microsoft.icon">
+	<link rel="shortcut icon" href="./favicon.ico" type="image/vnd.microsoft.icon">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<link rel="apple-touch-icon" sizes="152x152" href="./apple-touch-icon-precomposed.png">
+	<script src="./app.js" defer></script>
+	<style>
+:root { --as-width: 4; --as-height: 5; }
+html { height: 100%; }
+body { padding: 0; margin: 0; height:100%; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+article { display: grid; grid-template-columns: 1fr; grid-template-rows: 20% 1fr;  width:100vw; height:calc( var( --as-height ) * 100vw / var( --as-width ) ); }
+@media screen and ( min-aspect-ratio: 4/5 ) { article { width: calc( var( --as-width ) * 100vh / var( --as-height ) ); height: 100vh; } }
+potion-board, swipe-area { grid-area: 2 / 1; }
+	</style>
+</head>
+<body>
+	<article>
+		<div></div>
+		<potion-board></potion-board>
+		<swipe-area></swipe-area>
+	</article>
+</body>
+</html>
