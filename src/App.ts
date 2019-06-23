@@ -71,10 +71,11 @@ class App
 	public swipe( key: Key )
 	{
 		if ( !this.game ) { return; }
-		this.game.swipe( key ).forEach( ( remove ) =>
+		if ( this.game.swipe( key ) <= 0 ) { return; }
+		if ( !this.game.add() )
 		{
-			this.board().removeChild( remove );
-		} );
+			console.log( 'Gameover.' );
+		}
 	}
 
 	public start()
@@ -93,13 +94,17 @@ class App
 
 	public board() { return this.config.board; }
 
-	public createPotion( x?: number, y?: number )
+	public createPotion( x?: number, y?: number, color: string = '' )
 	{
 		const potion = <PotionBottleElement>new (customElements.get( 'potion-botttle' ))();
 		if ( x !== undefined && y != undefined )
 		{
 			potion.x = x;
 			potion.y = y;
+			potion.color = color;
+			potion.capacity = color.length;
+			potion.setAttribute( 'disable', 'disable' );
+			setTimeout( () => { potion.removeAttribute( 'disable' ); }, 500 );
 		}
 		return potion;
 	}
