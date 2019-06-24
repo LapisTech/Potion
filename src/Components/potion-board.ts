@@ -37,6 +37,7 @@ interface PotionBoardElement extends HTMLElement
 			].join( '' );
 
 			const back = document.createElement( 'div' );
+			//animate, translate
 			back.classList.add( 'back' );
 
 			const front = document.createElement( 'div' );

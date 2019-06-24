@@ -53,14 +53,16 @@
         } }
         constructor() {
             super();
+            this.shaking = false;
             const shadow = this.attachShadow({ mode: 'open' });
             const style = document.createElement('style');
             style.textContent =
                 [
                     ':host { display: block; width: 2rem; height: 2rem; opacity: 1; --back: #1a1a1a; --front: #464646; }',
-                    ':host > div { width: 100%; height: 100%; transition: opacity 0.5s; }',
+                    ':host > div { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }',
                     ':host( [ disable ] ) > div { opacity: 0; }',
-                    ':host > div > svg { display: block; width: 100%; }',
+                    ':host( [ create ] ) > div > svg { width: 0; }',
+                    ':host > div > svg { display: block; width: 100%; height: 100%; transition: width 0.5s; }',
                     ':host > div > svg g > path { transition: all 0.5s; }',
                     ':host( [ color = "0" ] ) { --back: #c81f00; --front: #ff2800; }',
                     ':host( [ color = "1" ] ) { --back: #bda700; --front: #ffe100; }',
@@ -135,9 +137,14 @@
             });
         }
         async update() {
+            if (this.shaking) {
+                return Promise.resolve();
+            }
+            this.shaking = true;
             this.shakeSync(0);
             await this.shake(2, 500);
             await this.shake(1, 500);
+            this.shaking = false;
         }
         get x() { return parseInt(this.getAttribute('x') || '') || 0; }
         set x(value) { this.setAttribute('x', value + ''); }
@@ -172,13 +179,16 @@
         }
         use() {
             return new Promise((resolve) => {
-                setTimeout(() => {
-                    this.remove();
-                    resolve();
-                }, 1000);
+                setTimeout(() => { this.remove().then(resolve); }, 1000);
             });
         }
-        static get observedAttributes() { return ['capacity']; }
+        create() {
+            this.setAttribute('create', 'create');
+            return new Promise((resolve) => {
+                setTimeout(() => { this.removeAttribute('create'); resolve(); }, 500);
+            });
+        }
+        static get observedAttributes() { return ['capacity', 'x', 'y']; }
         attributeChangedCallback(attrName, oldVal, newVal) {
             if (oldVal === newVal) {
                 return;
@@ -224,7 +234,9 @@
             this.addEventListener('mouseup', (event) => { if (!touched) {
                 this.end();
             } touched = onmouse = false; });
-            this.addEventListener('mouseleave', (event) => { this.cancel(); });
+            this.addEventListener('mouseleave', (event) => { if (!onmouse) {
+                return;
+            } console.log(event); this.cancel(); });
             this.addEventListener('contextmenu', (event) => { event.stopPropagation(); });
         }
         begin(x, y) {
@@ -239,10 +251,10 @@
             if (Number.isNaN(this.sx) || Number.isNaN(this.sy) || Number.isNaN(this.ex) || Number.isNaN(this.ey)) {
                 return;
             }
-            if (!(this.sx === this.ex && this.sy === this.ey)) {
+            if (this.sx === this.ex && this.sy === this.ey) {
                 return;
             }
-            if (this.distance ** 2 < (this.ex - this.sx) ** 2 + (this.ey - this.sy) ** 2) {
+            if ((this.ex - this.sx) ** 2 + (this.ey - this.sy) ** 2 < this.distance ** 2) {
                 return;
             }
             this.dispatchEvent(new CustomEvent('swipe', { detail: {
@@ -250,7 +262,7 @@
                     sy: this.sy,
                     ex: this.ex,
                     ey: this.ey,
-                    radian: Math.atan2(this.ex - this.sx, this.ey - this.sy),
+                    radian: Math.atan2(this.ey - this.sy, this.ex - this.sx),
                 } }));
         }
         cancel() {
@@ -271,6 +283,8 @@
 class Game {
     constructor(app) {
         this.app = app;
+        this.usecount = 0;
+        this.nowmove = false;
         this.add();
         this.add();
     }
@@ -291,7 +305,14 @@ class Game {
         return true;
     }
     rand(max = 4) { return Math.floor(Math.random() * max); }
+    canInput() {
+        return this.usecount <= 0 && !this.nowmove;
+    }
     swipe(key) {
+        if (!this.canInput()) {
+            return 0;
+        }
+        this.nowmove = true;
         const map = this.app.map().map((p) => { return p ? { potion: p, merged: [] } : null; });
         switch (key) {
             case Key.Up: return this.moveUp(map);
@@ -299,6 +320,7 @@ class Game {
             case Key.Left: return this.moveLeft(map);
             case Key.Right: return this.moveRight(map);
         }
+        this.nowmove = false;
         return 0;
     }
     moveUp(map) {
@@ -372,9 +394,11 @@ class Game {
             p.potion.y = y;
             p.merged.forEach((p) => { p.x = x; p.y = y; });
             if (3 <= p.potion.capacity && p.potion.color !== '012') {
-                p.potion.use();
+                ++this.usecount;
+                p.potion.use().then(() => { --this.usecount; });
             }
         });
+        this.nowmove = false;
     }
     canMerge(a, b) {
         return a.capacity + b.capacity <= 3;
@@ -394,6 +418,7 @@ class App {
     constructor(config) {
         this.config = config;
         this.game = null;
+        this.nowpause = false;
         this.initKey();
         this.initInput();
     }
@@ -412,15 +437,16 @@ class App {
     }
     initInput() {
         this.config.swipe.addEventListener('swipe', (event) => {
-            if (!this.game) {
+            if (!this.game || this.nowpause) {
                 return;
             }
             this.swipe(this.radianToKey(event.detail.radian));
         });
         document.addEventListener('keydown', (event) => {
-            if (!this.game) {
+            if (!this.game || this.nowpause) {
                 return;
             }
+            event.stopPropagation();
             const key = this.keys[event.keyCode];
             if (key === undefined) {
                 return;
@@ -469,6 +495,8 @@ class App {
         }
     }
     board() { return this.config.board; }
+    pause() { this.nowpause = true; }
+    resume() { this.nowpause = false; }
     createPotion(x, y, color = '') {
         const potion = new (customElements.get('potion-botttle'))();
         if (x !== undefined && y != undefined) {
@@ -476,14 +504,13 @@ class App {
             potion.y = y;
             potion.color = color;
             potion.capacity = color.length;
-            potion.setAttribute('disable', 'disable');
-            setTimeout(() => { potion.removeAttribute('disable'); }, 500);
+            potion.create();
         }
         return potion;
     }
     map() {
         const map = [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null];
-        this.board().querySelectorAll('potion-botttle').forEach((potion) => {
+        this.board().querySelectorAll('potion-botttle:not([disable])').forEach((potion) => {
             map[4 * potion.y + potion.x] = potion;
         });
         return map;

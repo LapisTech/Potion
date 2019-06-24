@@ -15,12 +15,14 @@ class App
 	private config: AppConfig;
 	private game: Game | null;
 	private keys: { [ keys: number ]: Key };
+	private nowpause: boolean;
 
 	constructor( config: AppConfig )
 	{
 		this.config = config;
 
 		this.game = null;
+		this.nowpause = false;
 
 		this.initKey();
 
@@ -46,13 +48,14 @@ class App
 	{
 		this.config.swipe.addEventListener( 'swipe', ( event ) =>
 		{
-			if ( !this.game ) { return; }
+			if ( !this.game || this.nowpause ) { return; }
 			this.swipe( this.radianToKey( event.detail.radian ) );
 		} );
 
 		document.addEventListener( 'keydown', ( event ) =>
 		{
-			if ( !this.game ) { return; }
+			if ( !this.game || this.nowpause ) { return; }
+			event.stopPropagation();
 			const key = this.keys[ event.keyCode ];
 			if ( key === undefined ) { return; }
 			this.swipe( key );
@@ -94,6 +97,10 @@ class App
 
 	public board() { return this.config.board; }
 
+	public pause() { this.nowpause = true; }
+
+	public resume() { this.nowpause = false; }
+
 	public createPotion( x?: number, y?: number, color: string = '' )
 	{
 		const potion = <PotionBottleElement>new (customElements.get( 'potion-botttle' ))();
@@ -103,8 +110,7 @@ class App
 			potion.y = y;
 			potion.color = color;
 			potion.capacity = color.length;
-			potion.setAttribute( 'disable', 'disable' );
-			setTimeout( () => { potion.removeAttribute( 'disable' ); }, 500 );
+			potion.create();
 		}
 		return potion;
 	}
@@ -112,7 +118,7 @@ class App
 	public map()
 	{
 		const map: PotionArray = [ null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null ];
-		this.board().querySelectorAll( 'potion-botttle' ).forEach( ( potion: PotionBottleElement ) =>
+		this.board().querySelectorAll( 'potion-botttle:not([disable])' ).forEach( ( potion: PotionBottleElement ) =>
 		{
 			map[ 4 * potion.y + potion.x ] = potion;
 		} );

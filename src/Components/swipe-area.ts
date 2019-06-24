@@ -60,7 +60,7 @@ interface SwipeAreaEvent extends CustomEvent
 			this.addEventListener( 'mousedown', ( event ) => { onmouse = true; if ( touched ) { return; } this.begin( event.clientX, event.clientY ); } );
 			this.addEventListener( 'mousemove', ( event ) => { if ( !onmouse || touched ) { return; } this.move( event.clientX, event.clientY ) } );
 			this.addEventListener( 'mouseup', ( event ) => { if ( !touched ) { this.end(); } touched = onmouse = false; } );
-			this.addEventListener( 'mouseleave', ( event ) => { this.cancel(); } );
+			this.addEventListener( 'mouseleave', ( event ) => { if (!onmouse ) { return; }console.log(event); this.cancel(); } );
 
 			this.addEventListener( 'contextmenu', ( event ) => { event.stopPropagation(); } );
 		}
@@ -80,16 +80,15 @@ interface SwipeAreaEvent extends CustomEvent
 		private end()
 		{
 			if ( Number.isNaN( this.sx ) || Number.isNaN( this.sy ) || Number.isNaN( this.ex ) || Number.isNaN( this.ey ) ) { return; }
-			if ( !( this.sx === this.ex && this.sy === this.ey ) ) { return; }
-			if ( this.distance ** 2 < ( this.ex - this.sx ) ** 2 + ( this.ey - this.sy ) ** 2 ) { return; }
-
+			if ( this.sx === this.ex && this.sy === this.ey ) { return; }
+			if ( ( this.ex - this.sx ) ** 2 + ( this.ey - this.sy ) ** 2 < this.distance ** 2 ) { return; }
 			this.dispatchEvent( new CustomEvent<SwipeAreaData>( 'swipe', { detail:
 			{
 				sx: this.sx,
 				sy: this.sy,
 				ex: this.ex,
 				ey: this.ey,
-				radian: Math.atan2( this.ex - this.sx, this.ey - this.sy ),
+				radian: Math.atan2( this.ey - this.sy, this.ex - this.sx ),
 			} } ) );
 		}
 

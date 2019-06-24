@@ -7,6 +7,7 @@ interface PotionBottleElement extends HTMLElement
 	merge( potion: PotionBottleElement ): boolean;
 	remove(): Promise<void>;
 	use(): Promise<void>;
+	create(): Promise<void>;
 }
 
 ( ( script, init ) =>
@@ -22,9 +23,12 @@ interface PotionBottleElement extends HTMLElement
 
 		private back: SVGPathElement;
 		private front: SVGPathElement;
+		private shaking: boolean;
 		constructor()
 		{
 			super();
+
+			this.shaking = false;
 
 			const shadow = this.attachShadow( { mode: 'open' } );
 
@@ -32,9 +36,10 @@ interface PotionBottleElement extends HTMLElement
 			style.textContent =
 			[
 				':host { display: block; width: 2rem; height: 2rem; opacity: 1; --back: #1a1a1a; --front: #464646; }',
-				':host > div { width: 100%; height: 100%; transition: opacity 0.5s; }',
+				':host > div { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; transition: opacity 0.5s; }',
 				':host( [ disable ] ) > div { opacity: 0; }',
-				':host > div > svg { display: block; width: 100%; }',
+				':host( [ create ] ) > div > svg { width: 0; }',
+				':host > div > svg { display: block; width: 100%; height: 100%; transition: width 0.5s; }',
 				':host > div > svg g > path { transition: all 0.5s; }',
 				':host( [ color = "0" ] ) { --back: #c81f00; --front: #ff2800; }',
 				':host( [ color = "1" ] ) { --back: #bda700; --front: #ffe100; }',
@@ -132,9 +137,12 @@ interface PotionBottleElement extends HTMLElement
 
 		private async update()
 		{
+			if ( this.shaking ) { return Promise.resolve(); }
+			this.shaking = true;
 			this.shakeSync( 0 );
 			await this.shake( 2, 500 );
 			await this.shake( 1, 500 );
+			this.shaking = false;
 		}
 
 		get x() { return parseInt( this.getAttribute( 'x' ) || '' ) || 0; }
@@ -178,20 +186,25 @@ interface PotionBottleElement extends HTMLElement
 		{
 			return new Promise<void>( ( resolve ) =>
 			{
-				setTimeout( () =>
-				{
-					this.remove();
-					resolve();
-				}, 1000 );
+				setTimeout( () => { this.remove().then( resolve ); }, 1000 );
 			} );
 		}
-		
-		static get observedAttributes() { return [ 'capacity' ]; }
+
+		public create()
+		{
+			this.setAttribute( 'create', 'create' );
+			return new Promise<void>( ( resolve ) =>
+			{
+				setTimeout( () => { this.removeAttribute( 'create' ); resolve(); }, 500 );
+			} );
+		}
+
+		static get observedAttributes() { return [ 'capacity', 'x', 'y' ]; }
 
 		public attributeChangedCallback( attrName: string, oldVal: any , newVal: any )
 		{
 			if ( oldVal === newVal ) { return; }
-	
+
 			this.update();
 		}
 	}

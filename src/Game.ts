@@ -3,10 +3,14 @@ type MergedPotionArray = ( null | { potion: PotionBottleElement, merged: PotionB
 class Game
 {
 	private app: App;
+	private usecount: number;
+	private nowmove: boolean;
 
 	constructor( app: App )
 	{
 		this.app = app;
+		this.usecount = 0;
+		this.nowmove = false;
 		this.add();
 		this.add();
 	}
@@ -28,8 +32,15 @@ class Game
 
 	private rand( max = 4 ) { return Math.floor( Math.random() * max ); }
 
+	private canInput()
+	{
+		return this.usecount <= 0 && !this.nowmove;
+	}
+
 	public swipe( key: Key )
 	{
+		if ( !this.canInput() ) { return 0; }
+		this.nowmove = true;
 		const map = this.app.map().map( ( p ) => { return p ? { potion: p, merged: [] } : null; } );
 		switch( key )
 		{
@@ -38,6 +49,7 @@ class Game
 			case Key.Left: return this.moveLeft( map );
 			case Key.Right: return this.moveRight( map );
 		}
+		this.nowmove = false;
 		return 0;
 	}
 
@@ -129,9 +141,11 @@ class Game
 			p.merged.forEach( ( p ) => { p.x = x; p.y = y; } );
 			if ( 3 <= p.potion.capacity && p.potion.color !== '012' )
 			{
-				p.potion.use();
+				++this.usecount;
+				p.potion.use().then( () => { --this.usecount; } );
 			}
 		} );
+		this.nowmove = false;
 	}
 
 	private canMerge( a: PotionBottleElement, b: PotionBottleElement )
