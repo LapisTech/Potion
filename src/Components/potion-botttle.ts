@@ -4,10 +4,13 @@ interface PotionBottleElement extends HTMLElement
 	y: number;
 	capacity: number;
 	color: string;
+	neutralizer: boolean;
+	canMerge( b: PotionBottleElement ): boolean;
 	merge( potion: PotionBottleElement ): boolean;
 	remove(): Promise<void>;
 	use(): Promise<void>;
 	create(): Promise<void>;
+	isGood(): boolean;
 }
 
 ( ( script, init ) =>
@@ -41,26 +44,26 @@ interface PotionBottleElement extends HTMLElement
 				':host( [ create ] ) > div > svg { width: 0; }',
 				':host > div > svg { display: block; width: 100%; height: 100%; transition: width 0.5s; }',
 				':host > div > svg g > path { transition: all 0.5s; }',
-				':host( [ color = "0" ] ) { --back: #c81f00; --front: #ff2800; }',
-				':host( [ color = "1" ] ) { --back: #bda700; --front: #ffe100; }',
-				':host( [ color = "2" ] ) { --back: #090094; --front: #0c00cc; }',
-				':host( [ color = "00" ] ) { --back: #aa1a00; --front: #db2200; }',
-				':host( [ color = "01" ] ) { --back: #c56300; --front: #ff8101; }',
-				':host( [ color = "02" ] ) { --back: #580158; --front: #800180; }',
-				':host( [ color = "11" ] ) { --back: #a28f00; --front: #efd300; }',
-				':host( [ color = "12" ] ) { --back: #014e01; --front: #018001; }',
-				':host( [ color = "22" ] ) { --back: #07006f; --front: #0b00b4; }',
-				':host( [ color = "000" ] ) { --back: #970000; --front: #d40000; }',
-				':host( [ color = "001" ] ) { --back: #ba4000; --front: #ff5700; }',
-				':host( [ color = "002" ] ) { --back: #781c39; --front: #ad2952; }',
-				':host( [ color = "111" ] ) { --back: #948300; --front: #cab200; }',
-				':host( [ color = "011" ] ) { --back: #a56e00; --front: #ffab01; }',
-				':host( [ color = "112" ] ) { --back: #568c01; --front: #80d101; }',
-				':host( [ color = "222" ] ) { --back: #040049; --front: #080088; }',
-				':host( [ color = "022" ] ) { --back: #372b5c; --front: #5c479a; }',
-				':host( [ color = "122" ] ) { --back: #00796c; --front: #009e8c; }',
+				':host( [ color="0" ] ) { --back: #c81f00; --front: #ff2800; }',
+				':host( [ color="1" ] ) { --back: #bda700; --front: #ffe100; }',
+				':host( [ color="2" ] ) { --back: #090094; --front: #0c00cc; }',
+				':host( [ color="00" ] ) { --back: #aa1a00; --front: #db2200; }',
+				':host( [ color="01" ] ) { --back: #c56300; --front: #ff8101; }',
+				':host( [ color="02" ] ) { --back: #580158; --front: #800180; }',
+				':host( [ color="11" ] ) { --back: #a28f00; --front: #efd300; }',
+				':host( [ color="12" ] ) { --back: #014e01; --front: #018001; }',
+				':host( [ color="22" ] ) { --back: #07006f; --front: #0b00b4; }',
+				':host( [ color="000" ] ) { --back: #970000; --front: #d40000; }',
+				':host( [ color="001" ] ) { --back: #ba4000; --front: #ff5700; }',
+				':host( [ color="002" ] ) { --back: #781c39; --front: #ad2952; }',
+				':host( [ color="111" ] ) { --back: #948300; --front: #cab200; }',
+				':host( [ color="011" ] ) { --back: #a56e00; --front: #ffab01; }',
+				':host( [ color="112" ] ) { --back: #568c01; --front: #80d101; }',
+				':host( [ color="222" ] ) { --back: #040049; --front: #080088; }',
+				':host( [ color="022" ] ) { --back: #372b5c; --front: #5c479a; }',
+				':host( [ color="122" ] ) { --back: #00796c; --front: #009e8c; }',
+				':host( [ neutralizer ] ) { --back: lightgray; --front: white; }',
 			].join( '' );
-
 
 			const contents = document.createElement( 'div' );
 			contents.appendChild( this.createSVG() );
@@ -157,13 +160,18 @@ interface PotionBottleElement extends HTMLElement
 		get color() { return this.getAttribute( 'color' ) || ''; }
 		set color( value ) { this.setAttribute( 'color', ( value + '' ).split( '' ).sort().join( '' ) ); }
 
+		get neutralizer() { return this.hasAttribute( 'neutralizer' ); }
+		set neutralizer( value ) { if ( value ) { this.setAttribute( 'neutralizer', 'neutralizer' ); } else { this.removeAttribute( 'neutralizer' ); } }
+
+		public canMerge( b: PotionBottleElement )
+		{
+			return this.capacity + b.capacity <= 3;
+		}
+
 		public merge( potion: PotionBottleElement )
 		{
-			const a = this.capacity;
-			const b = potion.capacity;
-			if ( 3 < a + b ) { return false; }
 			this.color += potion.color;
-			this.capacity = a + b;
+			this.capacity += potion.capacity;
 			potion.remove();
 			return true;
 		}
@@ -197,6 +205,18 @@ interface PotionBottleElement extends HTMLElement
 			{
 				setTimeout( () => { this.removeAttribute( 'create' ); resolve(); }, 500 );
 			} );
+		}
+
+		public isGood()
+		{
+			switch( this.color )
+			{
+				case '000':
+				case '111':
+				case '222':
+					return true;
+			}
+			return false;
 		}
 
 		static get observedAttributes() { return [ 'capacity', 'x', 'y' ]; }

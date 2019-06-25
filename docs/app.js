@@ -4,6 +4,46 @@
     }
     document.addEventListener('DOMContentLoaded', () => { init(script); });
 })(document.currentScript, (script) => {
+    ((component, tagname = 'dialog-box') => {
+        if (customElements.get(tagname)) {
+            return;
+        }
+        customElements.define(tagname, component);
+    })(class DialogBox extends HTMLElement {
+        constructor() {
+            super();
+            const shadow = this.attachShadow({ mode: 'open' });
+            const style = document.createElement('style');
+            style.innerHTML =
+                [
+                    ':host { background: rgba( 0, 0, 0, 0.8 ); display: block; opacity: 0; transition: opacity 0.5s; visibility: hidden; position: absolute; top: 0; left: 0; width: 100%; height: 100%; }',
+                    ':host( [open] ) { visibility: visible; opacity: 1; }',
+                    ':host > div { min-width: 20%; max-width: 90%; max-height: 90%; min-height: 1rem; }',
+                ].join('');
+            const contents = document.createElement('div');
+            contents.appendChild(document.createElement('slot'));
+            shadow.appendChild(style);
+            shadow.appendChild(contents);
+            contents.addEventListener('click', (event) => { event.stopPropagation(); });
+            this.addEventListener('click', () => { this.close(); });
+        }
+        get open() { return this.hasAttribute('open'); }
+        set open(value) { if (value) {
+            this.setAttribute('open', 'open');
+        }
+        else {
+            this.removeAttribute('open');
+        } }
+        close() { this.open = false; }
+        show() { this.open = true; }
+    }, script.dataset.tagname);
+});
+((script, init) => {
+    if (document.readyState !== 'loading') {
+        return init(script);
+    }
+    document.addEventListener('DOMContentLoaded', () => { init(script); });
+})(document.currentScript, (script) => {
     class PotionBoard extends HTMLElement {
         static Init(tagname = 'potion-board') { if (!customElements.get(tagname)) {
             customElements.define(tagname, this);
@@ -64,24 +104,25 @@
                     ':host( [ create ] ) > div > svg { width: 0; }',
                     ':host > div > svg { display: block; width: 100%; height: 100%; transition: width 0.5s; }',
                     ':host > div > svg g > path { transition: all 0.5s; }',
-                    ':host( [ color = "0" ] ) { --back: #c81f00; --front: #ff2800; }',
-                    ':host( [ color = "1" ] ) { --back: #bda700; --front: #ffe100; }',
-                    ':host( [ color = "2" ] ) { --back: #090094; --front: #0c00cc; }',
-                    ':host( [ color = "00" ] ) { --back: #aa1a00; --front: #db2200; }',
-                    ':host( [ color = "01" ] ) { --back: #c56300; --front: #ff8101; }',
-                    ':host( [ color = "02" ] ) { --back: #580158; --front: #800180; }',
-                    ':host( [ color = "11" ] ) { --back: #a28f00; --front: #efd300; }',
-                    ':host( [ color = "12" ] ) { --back: #014e01; --front: #018001; }',
-                    ':host( [ color = "22" ] ) { --back: #07006f; --front: #0b00b4; }',
-                    ':host( [ color = "000" ] ) { --back: #970000; --front: #d40000; }',
-                    ':host( [ color = "001" ] ) { --back: #ba4000; --front: #ff5700; }',
-                    ':host( [ color = "002" ] ) { --back: #781c39; --front: #ad2952; }',
-                    ':host( [ color = "111" ] ) { --back: #948300; --front: #cab200; }',
-                    ':host( [ color = "011" ] ) { --back: #a56e00; --front: #ffab01; }',
-                    ':host( [ color = "112" ] ) { --back: #568c01; --front: #80d101; }',
-                    ':host( [ color = "222" ] ) { --back: #040049; --front: #080088; }',
-                    ':host( [ color = "022" ] ) { --back: #372b5c; --front: #5c479a; }',
-                    ':host( [ color = "122" ] ) { --back: #00796c; --front: #009e8c; }',
+                    ':host( [ color="0" ] ) { --back: #c81f00; --front: #ff2800; }',
+                    ':host( [ color="1" ] ) { --back: #bda700; --front: #ffe100; }',
+                    ':host( [ color="2" ] ) { --back: #090094; --front: #0c00cc; }',
+                    ':host( [ color="00" ] ) { --back: #aa1a00; --front: #db2200; }',
+                    ':host( [ color="01" ] ) { --back: #c56300; --front: #ff8101; }',
+                    ':host( [ color="02" ] ) { --back: #580158; --front: #800180; }',
+                    ':host( [ color="11" ] ) { --back: #a28f00; --front: #efd300; }',
+                    ':host( [ color="12" ] ) { --back: #014e01; --front: #018001; }',
+                    ':host( [ color="22" ] ) { --back: #07006f; --front: #0b00b4; }',
+                    ':host( [ color="000" ] ) { --back: #970000; --front: #d40000; }',
+                    ':host( [ color="001" ] ) { --back: #ba4000; --front: #ff5700; }',
+                    ':host( [ color="002" ] ) { --back: #781c39; --front: #ad2952; }',
+                    ':host( [ color="111" ] ) { --back: #948300; --front: #cab200; }',
+                    ':host( [ color="011" ] ) { --back: #a56e00; --front: #ffab01; }',
+                    ':host( [ color="112" ] ) { --back: #568c01; --front: #80d101; }',
+                    ':host( [ color="222" ] ) { --back: #040049; --front: #080088; }',
+                    ':host( [ color="022" ] ) { --back: #372b5c; --front: #5c479a; }',
+                    ':host( [ color="122" ] ) { --back: #00796c; --front: #009e8c; }',
+                    ':host( [ neutralizer ] ) { --back: lightgray; --front: white; }',
                 ].join('');
             const contents = document.createElement('div');
             contents.appendChild(this.createSVG());
@@ -154,14 +195,19 @@
         set capacity(value) { this.setAttribute('capacity', value + ''); }
         get color() { return this.getAttribute('color') || ''; }
         set color(value) { this.setAttribute('color', (value + '').split('').sort().join('')); }
+        get neutralizer() { return this.hasAttribute('neutralizer'); }
+        set neutralizer(value) { if (value) {
+            this.setAttribute('neutralizer', 'neutralizer');
+        }
+        else {
+            this.removeAttribute('neutralizer');
+        } }
+        canMerge(b) {
+            return this.capacity + b.capacity <= 3;
+        }
         merge(potion) {
-            const a = this.capacity;
-            const b = potion.capacity;
-            if (3 < a + b) {
-                return false;
-            }
             this.color += potion.color;
-            this.capacity = a + b;
+            this.capacity += potion.capacity;
             potion.remove();
             return true;
         }
@@ -188,6 +234,15 @@
                 setTimeout(() => { this.removeAttribute('create'); resolve(); }, 500);
             });
         }
+        isGood() {
+            switch (this.color) {
+                case '000':
+                case '111':
+                case '222':
+                    return true;
+            }
+            return false;
+        }
         static get observedAttributes() { return ['capacity', 'x', 'y']; }
         attributeChangedCallback(attrName, oldVal, newVal) {
             if (oldVal === newVal) {
@@ -197,6 +252,35 @@
         }
     }
     PotionBottle.Init(script.dataset.tagname);
+});
+((script, init) => {
+    if (document.readyState !== 'loading') {
+        return init(script);
+    }
+    document.addEventListener('DOMContentLoaded', () => { init(script); });
+})(document.currentScript, (script) => {
+    ((component, tagname = 'scroll-box') => {
+        if (customElements.get(tagname)) {
+            return;
+        }
+        customElements.define(tagname, component);
+    })(class ScrollBox extends HTMLElement {
+        constructor() {
+            super();
+            const shadow = this.attachShadow({ mode: 'open' });
+            const style = document.createElement('style');
+            style.innerHTML =
+                [
+                    ':host { --back: rgba( 0, 0, 0, 0.8 ); --front: #a0a0a0; --size: 10px; display: block; width: 100%; height: fit-content; overflow: auto; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }',
+                    ':host::-webkit-scrollbar { overflow: hidden; width: var( --size ); height: var( --size ); background: var( --back ); border-radius: var( --size ); }',
+                    ':host::-webkit-scrollbar-button { display: none; }',
+                    ':host::-webkit-scrollbar-thumb { overflow: hidden; border-radius: var( --size ); background: var( --front ); }',
+                    ':host::-webkit-scrollbar-corner { overflow: hidden; border-radius: var( --size ); background: var( --front ); }',
+                ].join('');
+            shadow.appendChild(style);
+            shadow.appendChild(document.createElement('slot'));
+        }
+    }, script.dataset.tagname);
 });
 ((script, init) => {
     if (document.readyState !== 'loading') {
@@ -215,29 +299,33 @@
             style.textContent =
                 [
                     ':host { display: block; width: 100%; height: 100%; }',
-                    ':host( [ disable ] ) { pointer-events: none; }',
+                    ':host( [ disable ] ) > div { pointer-events: none; }',
+                    ':host > div { width: 100%; height: 100%; }',
                 ].join('');
+            const contents = document.createElement('div');
+            contents.appendChild(document.createElement('slot'));
             shadow.appendChild(style);
+            shadow.appendChild(contents);
             this.cancel();
             let touched = false;
-            this.addEventListener('touchstart', (event) => { touched = true; this.begin(event.touches[0].clientX, event.touches[0].clientY); });
-            this.addEventListener('touchmove', (event) => { this.move(event.touches[0].clientX, event.touches[0].clientY); });
-            this.addEventListener('touchend', (event) => { this.end(); });
-            this.addEventListener('touchcancel', (event) => { this.cancel(); });
+            contents.addEventListener('touchstart', (event) => { touched = true; this.begin(event.touches[0].clientX, event.touches[0].clientY); });
+            contents.addEventListener('touchmove', (event) => { this.move(event.touches[0].clientX, event.touches[0].clientY); });
+            contents.addEventListener('touchend', (event) => { this.end(); });
+            contents.addEventListener('touchcancel', (event) => { this.cancel(); });
             let onmouse = false;
-            this.addEventListener('mousedown', (event) => { onmouse = true; if (touched) {
+            contents.addEventListener('mousedown', (event) => { onmouse = true; if (touched) {
                 return;
             } this.begin(event.clientX, event.clientY); });
-            this.addEventListener('mousemove', (event) => { if (!onmouse || touched) {
+            contents.addEventListener('mousemove', (event) => { if (!onmouse || touched) {
                 return;
             } this.move(event.clientX, event.clientY); });
-            this.addEventListener('mouseup', (event) => { if (!touched) {
+            contents.addEventListener('mouseup', (event) => { if (!touched) {
                 this.end();
             } touched = onmouse = false; });
-            this.addEventListener('mouseleave', (event) => { if (!onmouse) {
+            contents.addEventListener('mouseleave', (event) => { if (!onmouse) {
                 return;
             } console.log(event); this.cancel(); });
-            this.addEventListener('contextmenu', (event) => { event.stopPropagation(); });
+            contents.addEventListener('contextmenu', (event) => { event.stopPropagation(); });
         }
         begin(x, y) {
             this.sx = this.ex = x;
@@ -360,7 +448,7 @@ class Game {
                 for (let _ = y - 1; 0 <= _; --_) {
                     const a = map[_ * 4 + x];
                     if (a) {
-                        if (this.canMerge(a.potion, b.potion)) {
+                        if (a.potion.canMerge(b.potion)) {
                             this.merge(a.potion, b.potion);
                             a.merged.push(b.potion);
                             ++count;
@@ -393,15 +481,12 @@ class Game {
             p.potion.x = x;
             p.potion.y = y;
             p.merged.forEach((p) => { p.x = x; p.y = y; });
-            if (3 <= p.potion.capacity && p.potion.color !== '012') {
+            if (3 <= p.potion.capacity && p.potion.isGood()) {
                 ++this.usecount;
                 p.potion.use().then(() => { --this.usecount; });
             }
         });
         this.nowmove = false;
-    }
-    canMerge(a, b) {
-        return a.capacity + b.capacity <= 3;
     }
     merge(a, b) {
         a.merge(b);
@@ -453,6 +538,7 @@ class App {
             }
             this.swipe(key);
         });
+        document.body.addEventListener('touchmove', (event) => { event.preventDefault(); });
     }
     radianToKey(radian) {
         if (radian <= -Math.PI * 3 / 4) {

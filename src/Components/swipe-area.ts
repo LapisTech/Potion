@@ -43,26 +43,31 @@ interface SwipeAreaEvent extends CustomEvent
 			style.textContent =
 			[
 				':host { display: block; width: 100%; height: 100%; }',
-				':host( [ disable ] ) { pointer-events: none; }',
+				':host( [ disable ] ) > div { pointer-events: none; }',
+				':host > div { width: 100%; height: 100%; }',
 			].join( '' );
 
+			const contents = document.createElement( 'div' );
+			contents.appendChild( document.createElement( 'slot' ) );
+
 			shadow.appendChild( style );
+			shadow.appendChild( contents );
 
 			this.cancel();
 
 			let touched = false;
-			this.addEventListener( 'touchstart', ( event ) => { touched = true; this.begin( event.touches[ 0 ].clientX, event.touches[ 0 ].clientY ); } );
-			this.addEventListener( 'touchmove', ( event ) => { this.move( event.touches[ 0 ].clientX, event.touches[ 0 ].clientY ); } );
-			this.addEventListener( 'touchend', ( event ) => { this.end(); } );
-			this.addEventListener( 'touchcancel', ( event ) => { this.cancel(); } );
+			contents.addEventListener( 'touchstart', ( event ) => { touched = true; this.begin( event.touches[ 0 ].clientX, event.touches[ 0 ].clientY ); } );
+			contents.addEventListener( 'touchmove', ( event ) => { this.move( event.touches[ 0 ].clientX, event.touches[ 0 ].clientY ); } );
+			contents.addEventListener( 'touchend', ( event ) => { this.end(); } );
+			contents.addEventListener( 'touchcancel', ( event ) => { this.cancel(); } );
 
 			let onmouse = false;
-			this.addEventListener( 'mousedown', ( event ) => { onmouse = true; if ( touched ) { return; } this.begin( event.clientX, event.clientY ); } );
-			this.addEventListener( 'mousemove', ( event ) => { if ( !onmouse || touched ) { return; } this.move( event.clientX, event.clientY ) } );
-			this.addEventListener( 'mouseup', ( event ) => { if ( !touched ) { this.end(); } touched = onmouse = false; } );
-			this.addEventListener( 'mouseleave', ( event ) => { if (!onmouse ) { return; }console.log(event); this.cancel(); } );
+			contents.addEventListener( 'mousedown', ( event ) => { onmouse = true; if ( touched ) { return; } this.begin( event.clientX, event.clientY ); } );
+			contents.addEventListener( 'mousemove', ( event ) => { if ( !onmouse || touched ) { return; } this.move( event.clientX, event.clientY ) } );
+			contents.addEventListener( 'mouseup', ( event ) => { if ( !touched ) { this.end(); } touched = onmouse = false; } );
+			contents.addEventListener( 'mouseleave', ( event ) => { if (!onmouse ) { return; }console.log(event); this.cancel(); } );
 
-			this.addEventListener( 'contextmenu', ( event ) => { event.stopPropagation(); } );
+			contents.addEventListener( 'contextmenu', ( event ) => { event.stopPropagation(); } );
 		}
 
 		private begin( x: number, y: number )

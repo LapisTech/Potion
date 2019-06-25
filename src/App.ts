@@ -60,6 +60,8 @@ class App
 			if ( key === undefined ) { return; }
 			this.swipe( key );
 		} );
+
+		document.body.addEventListener( 'touchmove', ( event ) => { event.preventDefault(); } );
 	}
 
 	public radianToKey( radian: number )

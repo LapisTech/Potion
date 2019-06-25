@@ -19,8 +19,6 @@ body { padding: 0; margin: 0; height:100%; overflow: hidden; display: flex; just
 article { display: grid; grid-template-columns: 1fr; grid-template-rows: 20% 1fr;  width:100vw; height:calc( var( --as-height ) * 100vw / var( --as-width ) ); }
 @media screen and ( min-aspect-ratio: 4/5 ) { article { width: calc( var( --as-width ) * 100vh / var( --as-height ) ); height: 100vh; } }
 potion-board, swipe-area { grid-area: 2 / 1; }
-body > div { position: absolute; width: 100%; height: 100%; overflow: hidden; background: rgba(); visibility: hidden; opacity: 0; transition: opacity 0.5s; }
-body > div[ show ] { visibility: visible; opacity: 1; }
 	</style>
 </head>
 <body>
@@ -30,5 +28,6 @@ body > div[ show ] { visibility: visible; opacity: 1; }
 		<potion-board></potion-board>
 		<swipe-area style="z-index:10;"></swipe-area>
 	</article>
+	<dialog-box></dialog-box>
 </body>
 </html>

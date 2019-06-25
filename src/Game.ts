@@ -101,7 +101,7 @@ class Game
 					const a = map[ _ * 4 + x ];
 					if ( a )
 					{
-						if ( this.canMerge( a.potion, b.potion ) )
+						if ( a.potion.canMerge( b.potion ) )
 						{
 							this.merge( a.potion, b.potion );
 							a.merged.push( b.potion );
@@ -139,18 +139,13 @@ class Game
 			p.potion.x = x;
 			p.potion.y = y;
 			p.merged.forEach( ( p ) => { p.x = x; p.y = y; } );
-			if ( 3 <= p.potion.capacity && p.potion.color !== '012' )
+			if ( 3 <= p.potion.capacity && p.potion.isGood() )
 			{
 				++this.usecount;
 				p.potion.use().then( () => { --this.usecount; } );
 			}
 		} );
 		this.nowmove = false;
-	}
-
-	private canMerge( a: PotionBottleElement, b: PotionBottleElement )
-	{
-		return a.capacity + b.capacity <= 3;
 	}
 
 	private merge( a: PotionBottleElement, b: PotionBottleElement )
