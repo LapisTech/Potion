@@ -10,6 +10,21 @@ type PotionArray = ( PotionBottleElement | null )[];
 
 enum Key { Up, Down, Left, Right }
 
+interface ScoreData
+{
+	'000': number;
+	'001': number;
+	'002': number;
+	'111': number;
+	'011': number;
+	'112': number;
+	'222': number;
+	'022': number;
+	'122': number;
+	neutralizer: number;
+	remove: number;
+}
+
 class App
 {
 	private config: AppConfig;
@@ -54,6 +69,7 @@ class App
 
 		document.addEventListener( 'keydown', ( event ) =>
 		{
+			if ( event.shiftKey && event.keyCode === 82 ) { return UnregisterSW(); }
 			if ( !this.game || this.nowpause ) { return; }
 			event.stopPropagation();
 			const key = this.keys[ event.keyCode ];

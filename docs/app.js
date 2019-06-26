@@ -202,17 +202,37 @@
         else {
             this.removeAttribute('neutralizer');
         } }
-        canMerge(b) {
-            return this.capacity + b.capacity <= 3;
+        get disable() { return this.hasAttribute('disable'); }
+        set disable(value) { if (value) {
+            this.setAttribute('disable', 'disable');
+        }
+        else {
+            this.removeAttribute('disable');
+        } }
+        canMerge(potion) {
+            if (this.disable || potion.disable) {
+                return false;
+            }
+            return this.capacity + potion.capacity <= 3 ||
+                (this.color === '012' && potion.color === '012') ||
+                (this.neutralizer !== potion.neutralizer && 3 <= this.capacity && 3 <= potion.capacity);
         }
         merge(potion) {
-            this.color += potion.color;
-            this.capacity += potion.capacity;
+            if (this.neutralizer !== potion.neutralizer) {
+                this.remove();
+            }
+            else if (this.color === '012' && potion.color === '012') {
+                this.toNeutralizer();
+            }
+            else {
+                this.color += potion.color;
+                this.capacity += potion.capacity;
+            }
             potion.remove();
             return true;
         }
         remove() {
-            this.setAttribute('disable', 'disable');
+            this.disable = true;
             return new Promise((resolve) => {
                 setTimeout(() => {
                     const p = this.parentElement;
@@ -242,6 +262,10 @@
                     return true;
             }
             return false;
+        }
+        toNeutralizer() {
+            this.color = '';
+            this.neutralizer = true;
         }
         static get observedAttributes() { return ['capacity', 'x', 'y']; }
         attributeChangedCallback(attrName, oldVal, newVal) {
@@ -373,6 +397,20 @@ class Game {
         this.app = app;
         this.usecount = 0;
         this.nowmove = false;
+        this.score =
+            {
+                '000': 0,
+                '001': 0,
+                '002': 0,
+                '111': 0,
+                '011': 0,
+                '112': 0,
+                '222': 0,
+                '022': 0,
+                '122': 0,
+                neutralizer: 0,
+                remove: 0,
+            };
         this.add();
         this.add();
     }
@@ -487,9 +525,19 @@ class Game {
             }
         });
         this.nowmove = false;
+        console.log(Object.keys(this.score).sort().map((k) => { return k + ':' + this.score[k]; }).join(' '));
     }
     merge(a, b) {
         a.merge(b);
+        if (a.neutralizer) {
+            ++this.score.neutralizer;
+        }
+        else if (a.hasAttribute('disable')) {
+            ++this.score.remove;
+        }
+        else if (3 <= a.capacity) {
+            ++this.score[a.color];
+        }
     }
 }
 var Key;
@@ -528,6 +576,9 @@ class App {
             this.swipe(this.radianToKey(event.detail.radian));
         });
         document.addEventListener('keydown', (event) => {
+            if (event.shiftKey && event.keyCode === 82) {
+                return UnregisterSW();
+            }
             if (!this.game || this.nowpause) {
                 return;
             }
@@ -600,6 +651,31 @@ class App {
             map[4 * potion.y + potion.x] = potion;
         });
         return map;
+    }
+}
+((script) => {
+    if (!script || !navigator.serviceWorker) {
+        return;
+    }
+    const sw = script.dataset.sw;
+    if (!sw) {
+        return;
+    }
+    const version = (script.src || '').replace(/^[^\?]*(\?.*)$/, '$1');
+    navigator.serviceWorker.register(sw + version, { scope: '.' }).then((registraion) => {
+        registraion.update();
+    });
+})(document.currentScript);
+async function UnregisterSW() {
+    if (navigator.serviceWorker) {
+        await navigator.serviceWorker.getRegistrations().then((registrations) => {
+            return Promise.all(registrations.map((registration) => { registration.unregister(); }));
+        });
+    }
+    if ('caches' in window) {
+        await caches.keys().then((keys) => {
+            return Promise.all(keys.map((key) => { return caches.delete(key); }));
+        });
     }
 }
 document.addEventListener('DOMContentLoaded', () => {

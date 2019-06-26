@@ -1,3 +1,12 @@
+/*
+First potion has 3 colors.
+Potion can merge if total capacity equal 3.
+Only same color merged potion is good.
+Other potion is bad.
+All color merged potion is poison.
+However, mixing poisons becomes a neutralizing agent.
+Neutralizing agent can remove bad potion.
+*/
 interface PotionBottleElement extends HTMLElement
 {
 	x: number;
@@ -5,6 +14,7 @@ interface PotionBottleElement extends HTMLElement
 	capacity: number;
 	color: string;
 	neutralizer: boolean;
+	disable: boolean;
 	canMerge( b: PotionBottleElement ): boolean;
 	merge( potion: PotionBottleElement ): boolean;
 	remove(): Promise<void>;
@@ -163,22 +173,37 @@ interface PotionBottleElement extends HTMLElement
 		get neutralizer() { return this.hasAttribute( 'neutralizer' ); }
 		set neutralizer( value ) { if ( value ) { this.setAttribute( 'neutralizer', 'neutralizer' ); } else { this.removeAttribute( 'neutralizer' ); } }
 
-		public canMerge( b: PotionBottleElement )
+		get disable() { return this.hasAttribute( 'disable' ); }
+		set disable( value ) { if ( value ) { this.setAttribute( 'disable', 'disable' ); } else { this.removeAttribute( 'disable' ); } }
+
+		public canMerge( potion: PotionBottleElement )
 		{
-			return this.capacity + b.capacity <= 3;
+			if ( this.disable || potion.disable ) { return false; }
+			return this.capacity + potion.capacity <= 3 ||
+				( this.color === '012' && potion.color === '012' ) ||
+				( this.neutralizer !== potion.neutralizer && 3 <= this.capacity && 3 <= potion.capacity );
 		}
 
 		public merge( potion: PotionBottleElement )
 		{
-			this.color += potion.color;
-			this.capacity += potion.capacity;
+			if ( this.neutralizer !== potion.neutralizer )
+			{
+				this.remove();
+			} else if ( this.color === '012' && potion.color === '012' )
+			{
+				this.toNeutralizer();
+			} else
+			{
+				this.color += potion.color;
+				this.capacity += potion.capacity;
+			}
 			potion.remove();
 			return true;
 		}
 
 		public remove()
 		{
-			this.setAttribute( 'disable', 'disable' );
+			this.disable = true;
 			return new Promise<void>( ( resolve ) =>
 			{
 				setTimeout( () =>
@@ -217,6 +242,12 @@ interface PotionBottleElement extends HTMLElement
 					return true;
 			}
 			return false;
+		}
+
+		private toNeutralizer()
+		{
+			this.color = '';
+			this.neutralizer = true;
 		}
 
 		static get observedAttributes() { return [ 'capacity', 'x', 'y' ]; }

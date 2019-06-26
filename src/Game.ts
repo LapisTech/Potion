@@ -5,12 +5,27 @@ class Game
 	private app: App;
 	private usecount: number;
 	private nowmove: boolean;
+	private score: ScoreData;
 
 	constructor( app: App )
 	{
 		this.app = app;
 		this.usecount = 0;
 		this.nowmove = false;
+		this.score =
+		{
+			'000': 0,
+			'001': 0,
+			'002': 0,
+			'111': 0,
+			'011': 0,
+			'112': 0,
+			'222': 0,
+			'022': 0,
+			'122': 0,
+			neutralizer: 0,
+			remove: 0,
+		};
 		this.add();
 		this.add();
 	}
@@ -146,10 +161,21 @@ class Game
 			}
 		} );
 		this.nowmove = false;
+		console.log( Object.keys( this.score ).sort().map( ( k: keyof ScoreData ) => { return k + ':' + this.score[ k ]; } ).join( ' ' ) );
 	}
 
 	private merge( a: PotionBottleElement, b: PotionBottleElement )
 	{
 		a.merge( b );
+		if ( a.neutralizer )
+		{
+			++this.score.neutralizer;
+		} else if ( a.hasAttribute( 'disable' ) )
+		{
+			++this.score.remove;
+		} else if( 3 <= a.capacity )
+		{
+			++this.score[ <keyof ScoreData>a.color ];
+		}
 	}
 }
