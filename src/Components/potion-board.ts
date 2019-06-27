@@ -1,5 +1,8 @@
 interface PotionBoardElement extends HTMLElement
 {
+	clear(): void;
+	map(): ( PotionBottleElement | null )[];
+	fromString( board: string ): boolean;
 }
 
 ( ( script, init ) =>
@@ -49,6 +52,47 @@ interface PotionBoardElement extends HTMLElement
 
 			shadow.appendChild( style );
 			shadow.appendChild( contents );
+		}
+
+		public clear()
+		{
+			const children = this.children;
+			for ( let i = children.length - 1 ; 0 <= i ; --i ) { this.removeChild( children[ i ] ); }
+		}
+
+		public map()
+		{
+			const map: PotionArray = [ null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null ];
+			this.querySelectorAll( 'potion-botttle:not([disable])' ).forEach( ( potion: PotionBottleElement ) =>
+			{
+				map[ 4 * potion.y + potion.x ] = potion;
+			} );
+			return map;
+		}
+
+		public toString() { return this.map().map( ( p ) => { return p ? p.toString() : '_'; } ).join( '' ); }
+
+		public fromString( board: string )
+		{
+			if ( typeof board !== 'string' || !board.match( /^[a-r\_\-]{16}$/ ) ) { return false; }
+			const potions = Array.from( board || '' );
+			potions.forEach( ( color, index ) =>
+			{
+				if ( !color ) { return; }
+				const potion = this.stringToPotion( color );
+				potion.x = index % 4;
+				potion.y = Math.floor( index / 4 );
+				this.appendChild( potion );
+			} );
+
+			return true;
+		}
+
+		private stringToPotion( color: string )
+		{
+			const potion = <PotionBottleElement>new (customElements.get( 'potion-botttle' ))();
+			potion.fromString( color );
+			return potion;
 		}
 	}
 

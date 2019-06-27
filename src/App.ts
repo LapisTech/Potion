@@ -1,4 +1,5 @@
 /// <reference path="./Game.ts" />
+/// <reference path="./GameData.ts" />
 
 interface AppConfig
 {
@@ -10,24 +11,10 @@ type PotionArray = ( PotionBottleElement | null )[];
 
 enum Key { Up, Down, Left, Right }
 
-interface ScoreData
-{
-	'000': number;
-	'001': number;
-	'002': number;
-	'111': number;
-	'011': number;
-	'112': number;
-	'222': number;
-	'022': number;
-	'122': number;
-	neutralizer: number;
-	remove: number;
-}
-
 class App
 {
 	private config: AppConfig;
+	private data: GameData;
 	private game: Game | null;
 	private keys: { [ keys: number ]: Key };
 	private nowpause: boolean;
@@ -35,6 +22,7 @@ class App
 	constructor( config: AppConfig )
 	{
 		this.config = config;
+		this.data = new GameData();
 
 		this.game = null;
 		this.nowpause = false;
@@ -93,7 +81,10 @@ class App
 	{
 		if ( !this.game ) { return; }
 		if ( this.game.swipe( key ) <= 0 ) { return; }
-		if ( !this.game.add() )
+		if ( this.game.add() )
+		{
+			this.data.turn();
+		} else
 		{
 			console.log( 'Gameover.' );
 		}
@@ -102,15 +93,8 @@ class App
 	public start()
 	{
 		if ( this.game ) { return; }
-		this.clear();
+		this.board().clear();
 		this.game = new Game( this );
-	}
-
-	public clear()
-	{
-		const board = this.board();
-		const children = board.children;
-		for ( let i = children.length - 1 ; 0 <= i ; --i ) { board.removeChild( children[ i ] ); }
 	}
 
 	public board() { return this.config.board; }
@@ -133,13 +117,7 @@ class App
 		return potion;
 	}
 
-	public map()
-	{
-		const map: PotionArray = [ null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null ];
-		this.board().querySelectorAll( 'potion-botttle:not([disable])' ).forEach( ( potion: PotionBottleElement ) =>
-		{
-			map[ 4 * potion.y + potion.x ] = potion;
-		} );
-		return map;
-	}
+	public map() { return this.board().map(); }
+
+	public gameData() { return this.data; }
 }

@@ -21,6 +21,7 @@ interface PotionBottleElement extends HTMLElement
 	use(): Promise<void>;
 	create(): Promise<void>;
 	isGood(): boolean;
+	fromString( str: string ): boolean;
 }
 
 ( ( script, init ) =>
@@ -248,6 +249,77 @@ interface PotionBottleElement extends HTMLElement
 		{
 			this.color = '';
 			this.neutralizer = true;
+		}
+
+		public toString()
+		{
+			if ( this.disable ) { return '_'; }
+			if ( this.neutralizer ) { return '-'; }
+			switch ( this.color )
+			{
+				case '0': return 'a';
+				case '1': return 'b';
+				case '2': return 'c';
+				case '00': return 'd';
+				case '01': return 'e';
+				case '02': return 'f';
+				case '11': return 'g';
+				case '12': return 'h';
+				case '22': return 'i';
+				case '000': return 'j';
+				case '001': return 'k';
+				case '002': return 'l';
+				case '111': return 'm';
+				case '011': return 'n';
+				case '112': return 'o';
+				case '222': return 'p';
+				case '022': return 'q';
+				case '122': return 'r';
+			}
+			return '_';
+		}
+
+		private stringToColor( color: string )
+		{
+			switch ( this.color )
+			{
+				case 'a': return '0';
+				case 'b': return '1';
+				case 'c': return '2';
+				case 'd': return '00';
+				case 'e': return '01';
+				case 'f': return '02';
+				case 'g': return '11';
+				case 'h': return '12';
+				case 'i': return '22';
+				case 'j': return '000';
+				case 'k': return '001';
+				case 'l': return '002';
+				case 'm': return '111';
+				case 'n': return '011';
+				case 'o': return '112';
+				case 'p': return '222';
+				case 'q': return '022';
+				case 'r': return '122';
+			}
+
+			return '';
+		}
+
+		public fromString( str: string )
+		{
+			if ( !str || str === '_' || !str.match( /^[a-r\-]$/ ) ) { return false; }
+
+			if ( str === '-' )
+			{
+				this.neutralizer = true;
+				this.capacity = 3;
+				return true;
+			}
+
+			this.color = this.stringToColor( str );
+			this.capacity = this.color.length;
+			return true;
 		}
 
 		static get observedAttributes() { return [ 'capacity', 'x', 'y' ]; }

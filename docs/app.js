@@ -78,6 +78,41 @@
             shadow.appendChild(style);
             shadow.appendChild(contents);
         }
+        clear() {
+            const children = this.children;
+            for (let i = children.length - 1; 0 <= i; --i) {
+                this.removeChild(children[i]);
+            }
+        }
+        map() {
+            const map = [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null];
+            this.querySelectorAll('potion-botttle:not([disable])').forEach((potion) => {
+                map[4 * potion.y + potion.x] = potion;
+            });
+            return map;
+        }
+        toString() { return this.map().map((p) => { return p ? p.toString() : '_'; }).join(''); }
+        fromString(board) {
+            if (typeof board !== 'string' || !board.match(/^[a-r\_\-]{16}$/)) {
+                return false;
+            }
+            const potions = Array.from(board || '');
+            potions.forEach((color, index) => {
+                if (!color) {
+                    return;
+                }
+                const potion = this.stringToPotion(color);
+                potion.x = index % 4;
+                potion.y = Math.floor(index / 4);
+                this.appendChild(potion);
+            });
+            return true;
+        }
+        stringToPotion(color) {
+            const potion = new (customElements.get('potion-botttle'))();
+            potion.fromString(color);
+            return potion;
+        }
     }
     PotionBoard.Init(script.dataset.tagname);
 });
@@ -267,6 +302,71 @@
             this.color = '';
             this.neutralizer = true;
         }
+        toString() {
+            if (this.disable) {
+                return '_';
+            }
+            if (this.neutralizer) {
+                return '-';
+            }
+            switch (this.color) {
+                case '0': return 'a';
+                case '1': return 'b';
+                case '2': return 'c';
+                case '00': return 'd';
+                case '01': return 'e';
+                case '02': return 'f';
+                case '11': return 'g';
+                case '12': return 'h';
+                case '22': return 'i';
+                case '000': return 'j';
+                case '001': return 'k';
+                case '002': return 'l';
+                case '111': return 'm';
+                case '011': return 'n';
+                case '112': return 'o';
+                case '222': return 'p';
+                case '022': return 'q';
+                case '122': return 'r';
+            }
+            return '_';
+        }
+        stringToColor(color) {
+            switch (this.color) {
+                case 'a': return '0';
+                case 'b': return '1';
+                case 'c': return '2';
+                case 'd': return '00';
+                case 'e': return '01';
+                case 'f': return '02';
+                case 'g': return '11';
+                case 'h': return '12';
+                case 'i': return '22';
+                case 'j': return '000';
+                case 'k': return '001';
+                case 'l': return '002';
+                case 'm': return '111';
+                case 'n': return '011';
+                case 'o': return '112';
+                case 'p': return '222';
+                case 'q': return '022';
+                case 'r': return '122';
+            }
+            return '';
+        }
+        fromString(str) {
+            if (!str || str === '_' || !str.match(/^[a-r\-]$/)) {
+                return false;
+            }
+            if (str === '-') {
+                this.neutralizer = true;
+                this.capacity = 3;
+                return true;
+            }
+            this.color = this.stringToColor(str);
+            this.capacity = this.color.length;
+            return true;
+        }
         static get observedAttributes() { return ['capacity', 'x', 'y']; }
         attributeChangedCallback(attrName, oldVal, newVal) {
             if (oldVal === newVal) {
@@ -397,20 +497,6 @@ class Game {
         this.app = app;
         this.usecount = 0;
         this.nowmove = false;
-        this.score =
-            {
-                '000': 0,
-                '001': 0,
-                '002': 0,
-                '111': 0,
-                '011': 0,
-                '112': 0,
-                '222': 0,
-                '022': 0,
-                '122': 0,
-                neutralizer: 0,
-                remove: 0,
-            };
         this.add();
         this.add();
     }
@@ -525,19 +611,91 @@ class Game {
             }
         });
         this.nowmove = false;
-        console.log(Object.keys(this.score).sort().map((k) => { return k + ':' + this.score[k]; }).join(' '));
+        console.log(this.app.gameData().printScore());
     }
     merge(a, b) {
         a.merge(b);
-        if (a.neutralizer) {
+        this.app.gameData().add(a);
+    }
+}
+class GameData {
+    constructor() {
+        this.data = { turn: 0, max: 0 };
+        this.newGame();
+    }
+    positiveNumber(num) {
+        if (!num) {
+            return 0;
+        }
+        if (typeof num !== 'number') {
+            num = parseInt(num);
+        }
+        if (Number.isNaN(num) || num < 0) {
+            return 0;
+        }
+        return num;
+    }
+    newGame() {
+        this.data.turn = 1;
+        this.score =
+            {
+                '000': 0,
+                '001': 0,
+                '002': 0,
+                '111': 0,
+                '011': 0,
+                '112': 0,
+                '222': 0,
+                '022': 0,
+                '122': 0,
+                neutralizer: 0,
+                remove: 0,
+            };
+    }
+    turn() { ++this.data.turn; }
+    calc() { return this.score['000'] + this.score['111'] + this.score['222']; }
+    add(potion) {
+        if (potion.neutralizer) {
             ++this.score.neutralizer;
         }
-        else if (a.hasAttribute('disable')) {
+        else if (potion.hasAttribute('disable')) {
             ++this.score.remove;
         }
-        else if (3 <= a.capacity) {
-            ++this.score[a.color];
+        else if (3 <= potion.capacity) {
+            ++this.score[potion.color];
         }
+    }
+    printScore() { return Object.keys(this.score).sort().map((k) => { return k + ':' + this.score[k]; }).join(' '); }
+    save(board) {
+        Object.keys(this.data).forEach((key) => {
+            localStorage.setItem(key, this.data[key] + '');
+        });
+        Object.keys(this.score).forEach((key) => {
+            localStorage.setItem(key, this.score[key] + '');
+        });
+        localStorage.setItem('board', board.toString());
+    }
+    load(board) {
+        this.data =
+            {
+                turn: this.positiveNumber(localStorage.getItem('turn')),
+                max: this.positiveNumber(localStorage.getItem('max')),
+            };
+        this.score =
+            {
+                '000': this.positiveNumber(localStorage.getItem('000')),
+                '001': this.positiveNumber(localStorage.getItem('001')),
+                '002': this.positiveNumber(localStorage.getItem('002')),
+                '111': this.positiveNumber(localStorage.getItem('111')),
+                '011': this.positiveNumber(localStorage.getItem('011')),
+                '112': this.positiveNumber(localStorage.getItem('112')),
+                '222': this.positiveNumber(localStorage.getItem('222')),
+                '022': this.positiveNumber(localStorage.getItem('022')),
+                '122': this.positiveNumber(localStorage.getItem('122')),
+                neutralizer: this.positiveNumber(localStorage.getItem('neutralizer')),
+                remove: this.positiveNumber(localStorage.getItem('remove')),
+            };
+        board.fromString(localStorage.getItem('board') || '');
     }
 }
 var Key;
@@ -550,6 +708,7 @@ var Key;
 class App {
     constructor(config) {
         this.config = config;
+        this.data = new GameData();
         this.game = null;
         this.nowpause = false;
         this.initKey();
@@ -613,7 +772,10 @@ class App {
         if (this.game.swipe(key) <= 0) {
             return;
         }
-        if (!this.game.add()) {
+        if (this.game.add()) {
+            this.data.turn();
+        }
+        else {
             console.log('Gameover.');
         }
     }
@@ -621,15 +783,8 @@ class App {
         if (this.game) {
             return;
         }
-        this.clear();
+        this.board().clear();
         this.game = new Game(this);
-    }
-    clear() {
-        const board = this.board();
-        const children = board.children;
-        for (let i = children.length - 1; 0 <= i; --i) {
-            board.removeChild(children[i]);
-        }
     }
     board() { return this.config.board; }
     pause() { this.nowpause = true; }
@@ -645,13 +800,8 @@ class App {
         }
         return potion;
     }
-    map() {
-        const map = [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null];
-        this.board().querySelectorAll('potion-botttle:not([disable])').forEach((potion) => {
-            map[4 * potion.y + potion.x] = potion;
-        });
-        return map;
-    }
+    map() { return this.board().map(); }
+    gameData() { return this.data; }
 }
 ((script) => {
     if (!script || !navigator.serviceWorker) {
