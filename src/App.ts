@@ -77,7 +77,7 @@ class App
 			this.swipe( key );
 		} );
 
-		document.body.addEventListener( 'touchmove', ( event ) => { event.preventDefault(); } );
+		document.body.addEventListener( 'touchmove', ( event ) => { event.preventDefault(); }, { passive: false } );
 	}
 
 	public radianToKey( radian: number )

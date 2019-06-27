@@ -589,7 +589,7 @@ class App {
             }
             this.swipe(key);
         });
-        document.body.addEventListener('touchmove', (event) => { event.preventDefault(); });
+        document.body.addEventListener('touchmove', (event) => { event.preventDefault(); }, { passive: false });
     }
     radianToKey(radian) {
         if (radian <= -Math.PI * 3 / 4) {
