@@ -11,6 +11,8 @@ interface PotionBoardElement extends HTMLElement
 	document.addEventListener( 'DOMContentLoaded', () => { init( script ); } );
 } )( <HTMLScriptElement>document.currentScript, ( script: HTMLScriptElement ) =>
 {
+	const BOTTTLE = script.dataset.bottle || 'potion-botttle';
+
 	class PotionBoard extends HTMLElement implements PotionBoardElement
 	{
 		public static Init( tagname = 'potion-board' ) { if ( !customElements.get( tagname ) ) { customElements.define( tagname, this ); } }
@@ -28,7 +30,7 @@ interface PotionBoardElement extends HTMLElement
 				':host > div { position: relative; width: 100%; height: 100%; overflow: hidden; }',
 				':host > div > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }',
 				'.back { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr 1fr; }',
-				'::slotted( potion-botttle ) { display: block; width: 25%; height: 25%; position: absolute; transition: top 0.5s, left 0.5s; }',
+				'::slotted( ' + BOTTTLE + ' ) { display: block; width: 25%; height: 25%; position: absolute; transition: top 0.5s, left 0.5s; }',
 				'::slotted( [ x = "0" ] ) { left: 0; }',
 				'::slotted( [ x = "1" ] ) { left: 25%; }',
 				'::slotted( [ x = "2" ] ) { left: 50%; }',
@@ -63,7 +65,7 @@ interface PotionBoardElement extends HTMLElement
 		public map()
 		{
 			const map: PotionArray = [ null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null ];
-			this.querySelectorAll( 'potion-botttle:not([disable])' ).forEach( ( potion: PotionBottleElement ) =>
+			this.querySelectorAll( BOTTTLE + ':not([disable])' ).forEach( ( potion: PotionBottleElement ) =>
 			{
 				map[ 4 * potion.y + potion.x ] = potion;
 			} );
@@ -90,12 +92,15 @@ interface PotionBoardElement extends HTMLElement
 
 		private stringToPotion( color: string )
 		{
-			const potion = <PotionBottleElement>new (customElements.get( 'potion-botttle' ))();
+			const potion = <PotionBottleElement>new (customElements.get( BOTTTLE ))();
 			potion.fromString( color );
 			return potion;
 		}
 	}
 
-	PotionBoard.Init( script.dataset.tagname );
-	
+
+	customElements.whenDefined( BOTTTLE ).then( () =>
+	{
+		PotionBoard.Init( script.dataset.tagname );
+	} );
 } );

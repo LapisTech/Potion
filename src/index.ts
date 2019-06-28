@@ -36,7 +36,6 @@ document.addEventListener( 'DOMContentLoaded', () =>
 	Promise.all(
 	[
 		customElements.whenDefined( 'potion-board' ),
-		customElements.whenDefined( 'potion-botttle' ),
 		customElements.whenDefined( 'swipe-area' ),
 	] ).then( () =>
 	{

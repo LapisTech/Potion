@@ -44,6 +44,7 @@
     }
     document.addEventListener('DOMContentLoaded', () => { init(script); });
 })(document.currentScript, (script) => {
+    const BOTTTLE = script.dataset.bottle || 'potion-botttle';
     class PotionBoard extends HTMLElement {
         static Init(tagname = 'potion-board') { if (!customElements.get(tagname)) {
             customElements.define(tagname, this);
@@ -58,7 +59,7 @@
                     ':host > div { position: relative; width: 100%; height: 100%; overflow: hidden; }',
                     ':host > div > div { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }',
                     '.back { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr 1fr; }',
-                    '::slotted( potion-botttle ) { display: block; width: 25%; height: 25%; position: absolute; transition: top 0.5s, left 0.5s; }',
+                    '::slotted( ' + BOTTTLE + ' ) { display: block; width: 25%; height: 25%; position: absolute; transition: top 0.5s, left 0.5s; }',
                     '::slotted( [ x = "0" ] ) { left: 0; }',
                     '::slotted( [ x = "1" ] ) { left: 25%; }',
                     '::slotted( [ x = "2" ] ) { left: 50%; }',
@@ -86,7 +87,7 @@
         }
         map() {
             const map = [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null];
-            this.querySelectorAll('potion-botttle:not([disable])').forEach((potion) => {
+            this.querySelectorAll(BOTTTLE + ':not([disable])').forEach((potion) => {
                 map[4 * potion.y + potion.x] = potion;
             });
             return map;
@@ -109,12 +110,14 @@
             return true;
         }
         stringToPotion(color) {
-            const potion = new (customElements.get('potion-botttle'))();
+            const potion = new (customElements.get(BOTTTLE))();
             potion.fromString(color);
             return potion;
         }
     }
-    PotionBoard.Init(script.dataset.tagname);
+    customElements.whenDefined(BOTTTLE).then(() => {
+        PotionBoard.Init(script.dataset.tagname);
+    });
 });
 ((script, init) => {
     if (document.readyState !== 'loading') {
@@ -711,8 +714,13 @@ class App {
         this.data = new GameData();
         this.game = null;
         this.nowpause = false;
+        this.init();
         this.initKey();
         this.initInput();
+    }
+    init() {
+        const params = new URLSearchParams(location.search.substring(1));
+        console.log(params + '');
     }
     initKey() {
         this.keys =
@@ -831,7 +839,6 @@ async function UnregisterSW() {
 document.addEventListener('DOMContentLoaded', () => {
     Promise.all([
         customElements.whenDefined('potion-board'),
-        customElements.whenDefined('potion-botttle'),
         customElements.whenDefined('swipe-area'),
     ]).then(() => {
         const app = new App({

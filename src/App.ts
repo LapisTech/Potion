@@ -27,9 +27,17 @@ class App
 		this.game = null;
 		this.nowpause = false;
 
+		this.init();
+
 		this.initKey();
 
 		this.initInput();
+	}
+
+	private init()
+	{
+		const params = new URLSearchParams( location.search.substring( 1 ) );
+		console.log( params + '' );
 	}
 
 	private initKey()
