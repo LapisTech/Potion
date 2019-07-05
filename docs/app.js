@@ -511,7 +511,7 @@ class Game {
         while (true) {
             const x = this.rand();
             const y = this.rand();
-            if (board.querySelector(`potion-botttle[ x = "${x}" ][ y = "${y}" ]`)) {
+            if (board.querySelector(`potion-botttle[ x = "${x}" ][ y = "${y}" ]:not([disable])`)) {
                 continue;
             }
             board.appendChild(this.app.createPotion(x, y, this.rand(3) + ''));
